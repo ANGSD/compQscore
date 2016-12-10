@@ -28,11 +28,35 @@ fun2 <- function(x){
     list(p1,p2,p3)
 }
 
+library(gridGraphics)
+grab_grob <- function(){
+  grid.echo()
+  grid.grab()
+}
+
+fun3 <- function(x){
+    df <- as.matrix(read.table(x))
+    rownames(df) <- 0:(nrow(df)-1)-33
+    colnames(df) <- 0:(ncol(df)-1)-33
+    df <- df[,colSums(df)>0]
+    df <- df[rowSums(df)>0,]
+    heatmap(log(df),scale='none',Rowv=NA,Colv=NA,main=x)
+    g1 <- grab_grob()
+    barplot(colSums(df),main="Before recalibration")
+    g2 <- grab_grob()
+    barplot(rowSums(df),main="After recalibration")
+    g3 <- grab_grob()
+    c(list(g1),list(g2),list(g3))
+}
+
 fnames <- system("ls *.comp",intern=T)
-png("heatmapRecalibration.png",width=3*480)
-par(mfrow=c(1,3))
-fun(fnames[1])
-#fun(fnames[2])
-#fun(fnames[3])
-#sapply(fnames,fun)
+gs <- sapply(fnames,fun3)
+
+pdf("qscoreComp.pdf",width=3*7,height=length(fnames)*7)
+lay <- grid.layout(nrow = length(fnames), ncol=3)
+pushViewport(viewport(layout = lay))
+for(i in 1:length(gs)){
+    cat("i:",i,"r: ",ceiling(i/3),"c: ", (i-1 %% 3)+1,"\n")
+    grid.draw(editGrob(gs[[i]], vp=viewport(layout.pos.row = ceiling(i/3),layout.pos.col = ((i-1) %% 3)+1, clip=TRUE)))
+}
 dev.off()
